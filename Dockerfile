@@ -1,7 +1,13 @@
-FROM busybox:stable
+FROM node:22-alpine
 
-COPY src/ /www/
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --prod --frozen-lockfile
+
+COPY server.js ./
+COPY src/ ./src/
 
 EXPOSE 8080
 
-CMD ["httpd", "-f", "-v", "-p", "8080", "-h", "/www"]
+CMD ["node", "server.js"]

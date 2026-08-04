@@ -3,6 +3,13 @@
 // card is already rendered, so async signals like canvas/audio don't block).
 const FINGERPRINT_POINTS = [
   {
+    label: 'IP address',
+    explanation: 'Your public IP address, seen by the server on every request. Reveals your ISP and rough geographic location, and is a stable identifier across visits unless it changes.',
+    prevention: 'Use a VPN, proxy, or Tor to hide your real IP from the sites you visit.',
+    common: 'e.g. 203.0.113.42 or an IPv6 address',
+    getValue: () => getServerIp(),
+  },
+  {
     label: 'User Agent',
     explanation: 'A string identifying your browser, engine, and OS. Historically the primary fingerprinting signal, though browsers increasingly freeze or reduce it ("User-Agent reduction").',
     prevention: 'Use a browser that freezes/generalizes the UA string (e.g. Chrome\'s reduction, Firefox\'s resist-fingerprinting mode), or a UA-spoofing extension.',
@@ -148,6 +155,17 @@ const FINGERPRINT_POINTS = [
     },
   },
 ];
+
+async function getServerIp() {
+  try {
+    const response = await fetch('/api/ip');
+    if (!response.ok) return 'unavailable';
+    const data = await response.json();
+    return data.ip || 'unavailable';
+  } catch {
+    return 'unavailable (server not reachable)';
+  }
+}
 
 function getCanvasFingerprint() {
   try {
