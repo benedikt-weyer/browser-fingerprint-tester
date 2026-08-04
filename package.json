@@ -1,0 +1,10 @@
+{
+  "name": "browser-fingerprint-tester",
+  "private": true,
+  "scripts": {
+    "start": "browser-sync start --server --files \"*.html, *.css, *.js\""
+  },
+  "devDependencies": {
+    "browser-sync": "^3.0.2"
+  }
+}
