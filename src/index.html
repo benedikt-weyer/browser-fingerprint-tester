@@ -2,11 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Hello World</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser Fingerprint Tester</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 id="greeting">Hello, World!</h1>
+  <header>
+    <h1>Browser Fingerprint Tester</h1>
+    <p class="subtitle">
+      Each card below is one data point that websites can use, alone or combined with others,
+      to identify or narrow down your browser. Values are read live from your current browser.
+    </p>
+  </header>
+
+  <div class="card-header-row" aria-hidden="true">
+    <span>Data point</span>
+    <span>What it is</span>
+    <span>How to reduce exposure</span>
+    <span>Common / example values</span>
+  </div>
+
+  <main id="card-list" class="card-list">
+    <!-- Cards are rendered by script.js -->
+  </main>
+
+  <footer>
+    <p>Everything on this page runs locally in your browser. No fingerprint data is sent anywhere.</p>
+  </footer>
+
   <script src="script.js"></script>
 </body>
 </html>

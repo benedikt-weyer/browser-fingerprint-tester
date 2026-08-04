@@ -1,10 +1,126 @@
+:root {
+  color-scheme: dark;
+  --bg: #1e1e2e;
+  --surface: #282838;
+  --border: #3b3b52;
+  --text: #cdd6f4;
+  --muted: #a0a0c0;
+  --accent: #89b4fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
   margin: 0;
-  font-family: sans-serif;
-  background: #1e1e2e;
-  color: #cdd6f4;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 2rem clamp(1rem, 4vw, 3rem) 4rem;
+}
+
+header {
+  max-width: 1200px;
+  margin: 0 auto 2rem;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.8rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  max-width: 70ch;
+  line-height: 1.5;
+}
+
+.card-header-row,
+.card {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 1.4fr 1.1fr;
+  gap: 1.25rem;
+}
+
+.card-header-row {
+  max-width: 1200px;
+  margin: 0 auto 0.5rem;
+  padding: 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+
+.cell h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+
+.cell h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.cell p {
+  margin: 0;
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
+.value {
+  font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  font-size: 0.88rem;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.cell-explanation p,
+.cell-prevention p {
+  color: var(--text);
+}
+
+.cell-common p {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+footer {
+  max-width: 1200px;
+  margin: 2rem auto 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .card-header-row {
+    display: none;
+  }
+
+  .card {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
 }
