@@ -10,6 +10,13 @@ const FINGERPRINT_POINTS = [
     getValue: () => getServerIp(),
   },
   {
+    label: 'HTTP request headers',
+    explanation: 'Headers sent with every request (Accept-Language, Accept-Encoding, Sec-CH-UA client hints, etc.) reveal browser, OS, and preference details independent of JavaScript, and their exact order/casing can itself be a signal.',
+    prevention: 'Privacy-focused browsers and proxies (e.g. Tor Browser, some VPN apps) normalize or strip non-essential headers before they reach the server.',
+    common: 'accept-language, accept-encoding, sec-ch-ua, sec-fetch-*, connection',
+    getValue: () => getServerHeaders(),
+  },
+  {
     label: 'User Agent',
     explanation: 'A string identifying your browser, engine, and OS. Historically the primary fingerprinting signal, though browsers increasingly freeze or reduce it ("User-Agent reduction").',
     prevention: 'Use a browser that freezes/generalizes the UA string (e.g. Chrome\'s reduction, Firefox\'s resist-fingerprinting mode), or a UA-spoofing extension.',
@@ -162,6 +169,19 @@ async function getServerIp() {
     if (!response.ok) return 'unavailable';
     const data = await response.json();
     return data.ip || 'unavailable';
+  } catch {
+    return 'unavailable (server not reachable)';
+  }
+}
+
+async function getServerHeaders() {
+  try {
+    const response = await fetch('/api/headers');
+    if (!response.ok) return 'unavailable';
+    const headers = await response.json();
+    return Object.entries(headers)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('\n');
   } catch {
     return 'unavailable (server not reachable)';
   }

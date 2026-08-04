@@ -15,6 +15,10 @@ app.get('/api/ip', (req, res) => {
   });
 });
 
+app.get('/api/headers', (req, res) => {
+  res.json(req.headers);
+});
+
 app.use(express.static(path.join(__dirname, 'src')));
 
 app.listen(port, () => {
