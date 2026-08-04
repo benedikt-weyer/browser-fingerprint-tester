@@ -5,7 +5,8 @@ cat <<'EOF'
 Available commands:
 
   help          Show this list of available commands
-  pnpm start    Start the dev server with hot reload (http://localhost:3000)
+  pnpm start    Start the Express server (http://localhost:8080)
+  pnpm dev      Start the Express server, restarting on file changes
   pnpm install  Install project dependencies
   docker build -t browser-fingerprint-tester .   Build the container image
   docker run -p 8080:8080 browser-fingerprint-tester   Run the container (http://localhost:8080)
