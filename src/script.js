@@ -262,14 +262,14 @@ function hashString(str) {
 
 function renderCards() {
   const list = document.getElementById('card-list');
-  FINGERPRINT_POINTS.forEach((point) => {
+  FINGERPRINT_POINTS.forEach((point, index) => {
     const card = document.createElement('article');
     card.className = 'card';
 
     const valueCell = document.createElement('div');
     valueCell.className = 'cell cell-value';
     const label = document.createElement('h2');
-    label.textContent = point.label;
+    label.textContent = `${index + 1}. ${point.label}`;
     const value = document.createElement('p');
     value.className = 'value';
     value.textContent = 'detecting…';
