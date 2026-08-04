@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <nav id="site-nav" class="site-nav"></nav>
+
   <header>
     <h1>Browser Fingerprint Tester</h1>
     <p class="subtitle">
@@ -16,12 +18,27 @@
     </p>
   </header>
 
+  <section id="snapshot-panel" class="snapshot-panel" hidden>
+    <form id="snapshot-form" class="snapshot-form">
+      <label for="snapshot-name">Snapshot name</label>
+      <input id="snapshot-name" name="snapshot-name" type="text" placeholder="e.g. Chrome on my laptop" required>
+      <button type="submit">Save current values as snapshot</button>
+      <span id="snapshot-message" class="form-message" role="status"></span>
+    </form>
+  </section>
+
+  <p id="login-prompt" class="form-message" hidden>
+    <a href="login.html">Log in</a> or <a href="register.html">register</a> to save snapshots of your
+    current values and see how each data point matches your saved history.
+  </p>
+
   <div class="card-header-row" aria-hidden="true">
     <span>Data point</span>
     <span>How to get it</span>
     <span>What it is</span>
     <span>How to reduce exposure</span>
     <span>Common / example values</span>
+    <span>Match with your snapshots</span>
   </div>
 
   <main id="card-list" class="card-list">
@@ -29,9 +46,10 @@
   </main>
 
   <footer>
-    <p>Everything on this page runs locally in your browser. No fingerprint data is sent anywhere.</p>
+    <p>Every attribute is read locally in your browser. Values are only sent to this server if you save a snapshot while logged in.</p>
   </footer>
 
+  <script src="nav.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snapshots — Browser Fingerprint Tester</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="site-nav" class="site-nav"></nav>
+
+  <header>
+    <h1>Your snapshots</h1>
+    <p class="subtitle">
+      Saved sets of your fingerprint values, listed by the time they were taken. Click a snapshot to see
+      the values it recorded.
+    </p>
+  </header>
+
+  <main class="snapshots-main">
+    <p id="snapshots-message" class="form-message"></p>
+    <ul id="snapshots-list" class="snapshots-list"></ul>
+  </main>
+
+  <script src="nav.js"></script>
+  <script src="snapshots.js"></script>
+</body>
+</html>

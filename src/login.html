@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in — Browser Fingerprint Tester</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="site-nav" class="site-nav"></nav>
+
+  <header>
+    <h1>Log in</h1>
+    <p class="subtitle">Log in to save fingerprint snapshots and see how your values change over time.</p>
+  </header>
+
+  <main class="auth-main">
+    <form id="login-form" class="auth-form">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" required>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+      <button type="submit">Log in</button>
+      <p id="form-message" class="form-message" role="alert"></p>
+    </form>
+    <p class="auth-switch">Don't have an account? <a href="register.html">Register</a></p>
+  </main>
+
+  <script src="nav.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>

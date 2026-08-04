@@ -708,6 +708,10 @@ function hashString(str) {
 
 function renderCards() {
   const list = document.getElementById('card-list');
+  const resolvedValues = new Array(FINGERPRINT_POINTS.length).fill(null);
+  const matchCells = new Array(FINGERPRINT_POINTS.length).fill(null);
+  const pendingValues = [];
+
   FINGERPRINT_POINTS.forEach((point, index) => {
     const card = document.createElement('article');
     card.className = 'card';
@@ -741,15 +745,98 @@ function renderCards() {
     commonCell.className = 'cell cell-common';
     commonCell.innerHTML = `<h3>Common values</h3><p>${point.common}</p>`;
 
-    card.append(valueCell, methodCell, explanationCell, preventionCell, commonCell);
+    const matchCell = document.createElement('div');
+    matchCell.className = 'cell cell-match';
+    matchCell.innerHTML = '<h3>Match with your snapshots</h3><p class="match-value">—</p>';
+    matchCells[index] = matchCell.querySelector('.match-value');
+
+    card.append(valueCell, methodCell, explanationCell, preventionCell, commonCell, matchCell);
     list.appendChild(card);
 
     if (point.renderValue) {
       point.renderValue(valueCell);
     } else {
-      Promise.resolve(point.getValue())
-        .then((result) => { value.textContent = result; })
-        .catch(() => { value.textContent = 'error reading value'; });
+      const pending = Promise.resolve(point.getValue())
+        .then((result) => { value.textContent = result; resolvedValues[index] = result; })
+        .catch(() => { value.textContent = 'error reading value'; resolvedValues[index] = 'error reading value'; });
+      pendingValues.push(pending);
+    }
+  });
+
+  Promise.all(pendingValues).then(() => onValuesResolved(resolvedValues, matchCells));
+}
+
+async function onValuesResolved(resolvedValues, matchCells) {
+  const values = FINGERPRINT_POINTS
+    .map((point, index) => (point.getValue ? { label: point.label, value: resolvedValues[index], index } : null))
+    .filter(Boolean);
+
+  const session = await BFT.initNav();
+
+  const snapshotPanel = document.getElementById('snapshot-panel');
+  const loginPrompt = document.getElementById('login-prompt');
+
+  if (!session.loggedIn) {
+    loginPrompt.hidden = false;
+    matchCells.forEach((cell) => { if (cell) cell.textContent = 'log in to compare'; });
+    return;
+  }
+
+  snapshotPanel.hidden = false;
+  setUpSnapshotForm(values);
+
+  try {
+    const response = await fetch('/api/match-scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: values.map(({ label, value }) => ({ label, value })) }),
+    });
+    const data = await response.json();
+
+    if (!data.totalSnapshots) {
+      matchCells.forEach((cell) => { if (cell) cell.textContent = 'no snapshots saved yet'; });
+      return;
+    }
+
+    const scoreByLabel = new Map(data.scores.map((score) => [score.label, score]));
+    values.forEach(({ label, index }) => {
+      const score = scoreByLabel.get(label);
+      const cell = matchCells[index];
+      if (cell && score) {
+        cell.textContent = `${score.percent.toFixed(0)}% (${score.matches}/${score.totalSnapshots})`;
+      }
+    });
+  } catch {
+    matchCells.forEach((cell) => { if (cell) cell.textContent = 'could not load'; });
+  }
+}
+
+function setUpSnapshotForm(values) {
+  const form = document.getElementById('snapshot-form');
+  const message = document.getElementById('snapshot-message');
+  if (form.dataset.wired) return;
+  form.dataset.wired = 'true';
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    message.textContent = 'Saving…';
+
+    const name = form['snapshot-name'].value.trim();
+    try {
+      const response = await fetch('/api/snapshots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, values: values.map(({ label, value }) => ({ label, value })) }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        message.textContent = data.error || 'Could not save snapshot.';
+        return;
+      }
+      message.textContent = 'Snapshot saved.';
+      form.reset();
+    } catch {
+      message.textContent = 'Could not reach the server.';
     }
   });
 }

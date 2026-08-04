@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — Browser Fingerprint Tester</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav id="site-nav" class="site-nav"></nav>
+
+  <header>
+    <h1>Register</h1>
+    <p class="subtitle">Create an account to save fingerprint snapshots and see how your values change over time.</p>
+  </header>
+
+  <main class="auth-main">
+    <form id="register-form" class="auth-form">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" required minlength="3">
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" required minlength="8">
+
+      <label for="confirm-password">Confirm password</label>
+      <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" required minlength="8">
+
+      <button type="submit">Register</button>
+      <p id="form-message" class="form-message" role="alert"></p>
+    </form>
+    <p class="auth-switch">Already have an account? <a href="login.html">Log in</a></p>
+  </main>
+
+  <script src="nav.js"></script>
+  <script src="register.js"></script>
+</body>
+</html>

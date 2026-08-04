@@ -39,7 +39,7 @@ h1 {
 .card-header-row,
 .card {
   display: grid;
-  grid-template-columns: 1fr 1.1fr 1.3fr 1.3fr 1fr;
+  grid-template-columns: 1fr 1.1fr 1.3fr 1.3fr 1fr 0.9fr;
   gap: 1.25rem;
 }
 
@@ -121,11 +121,208 @@ h1 {
   font-size: 0.85rem;
 }
 
+.match-value {
+  font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
 footer {
   margin: 2rem 0 0;
   color: var(--muted);
   font-size: 0.85rem;
   text-align: center;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 0 0 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.site-nav a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--accent);
+}
+
+.site-nav .nav-user {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.nav-button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.nav-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.form-message {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.form-message a {
+  color: var(--accent);
+}
+
+.snapshot-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 0 0 1.5rem;
+}
+
+.snapshot-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.snapshot-form label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.snapshot-form input,
+.auth-form input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.9rem;
+}
+
+.snapshot-form button,
+.auth-form button {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.snapshot-form button:hover,
+.auth-form button:hover {
+  opacity: 0.9;
+}
+
+.auth-main {
+  max-width: 360px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.auth-form label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.auth-switch {
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.snapshots-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 720px;
+}
+
+.snapshot-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.snapshot-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--text);
+  padding: 0.85rem 1.1rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.snapshot-header:hover {
+  color: var(--accent);
+}
+
+.snapshot-time {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.snapshot-detail {
+  border-top: 1px solid var(--border);
+  padding: 0.75rem 1.1rem 1rem;
+}
+
+.snapshot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.snapshot-table th,
+.snapshot-table td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.snapshot-table th {
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.snapshot-table td {
+  color: var(--text);
+  font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  word-break: break-word;
 }
 
 @media (max-width: 960px) {
@@ -136,5 +333,9 @@ footer {
   .card {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+  }
+
+  .site-nav .nav-user {
+    margin-left: 0;
   }
 }
