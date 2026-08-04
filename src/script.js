@@ -113,6 +113,17 @@ const FINGERPRINT_POINTS = [
     getValue: () => String(navigator.doNotTrack ?? 'unspecified'),
   },
   {
+    label: 'List of plugins',
+    method: 'navigator.plugins',
+    explanation: 'A browser-populated array describing installed browser plugins (PDF viewer, etc.). The exact set and order of plugins can vary by browser, OS, and installed software, adding entropy.',
+    prevention: 'Modern Chrome/Firefox report a small, standardized plugin list regardless of what\'s actually installed; Firefox resist-fingerprinting mode further reduces this to a fixed generic list.',
+    common: 'Chrome: PDF Viewer, Chrome PDF Viewer, Chromium PDF Viewer, Microsoft Edge PDF Viewer, WebKit built-in PDF; often empty on mobile/Firefox',
+    getValue: () => {
+      const plugins = Array.from(navigator.plugins || []);
+      return plugins.length ? plugins.map((p) => p.name).join(', ') : 'none reported';
+    },
+  },
+  {
     label: 'Canvas fingerprint',
     method: 'Draw to a hidden <canvas>, then canvas.toDataURL() and hash the pixel output.',
     explanation: 'Renders hidden text/shapes to a &lt;canvas&gt; and hashes the pixel output. Tiny differences in GPU, drivers, and font rendering produce a highly distinguishing hash.',
