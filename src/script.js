@@ -43,6 +43,14 @@ const FINGERPRINT_POINTS = [
     getValue: () => navigator.buildID || 'not supported by this browser',
   },
   {
+    label: 'Navigator vendor/product strings',
+    method: 'navigator.vendor, navigator.vendorSub, navigator.product, navigator.productSub',
+    explanation: 'A handful of legacy identity strings the browser reports about itself, holdovers from the Netscape era. Mostly frozen to fixed values today, but the exact combination still differs between browser engines.',
+    prevention: 'All major browsers already freeze these to fixed values; nothing further to configure.',
+    common: 'Chrome/Safari: "Google Inc." / "" / "Gecko" / "20030107"; Firefox: "" / "" / "Gecko" / "20100101"',
+    getValue: () => `vendor: ${navigator.vendor || '(empty)'}, vendorSub: ${navigator.vendorSub || '(empty)'}, product: ${navigator.product || '(empty)'}, productSub: ${navigator.productSub || '(empty)'}`,
+  },
+  {
     label: 'Language(s)',
     method: 'navigator.languages / navigator.language',
     explanation: 'Your preferred UI/content languages, taken from OS or browser settings — narrows you to a region/locale.',
@@ -71,6 +79,14 @@ const FINGERPRINT_POINTS = [
     prevention: 'Browser resist-fingerprinting modes round the reported viewport/screen size to common buckets; using a non-maximized window also helps.',
     common: '1920x1080, 2560x1440, 375x812 (mobile)',
     getValue: () => `${screen.width}x${screen.height} (avail ${screen.availWidth}x${screen.availHeight}), ${screen.colorDepth}-bit`,
+  },
+  {
+    label: 'Screen position',
+    method: 'window.screenX/screenY (or screen.left/top), screen.availLeft/availTop',
+    explanation: 'The window\'s position on the screen and the offset of the usable desktop area (excluding OS taskbars/docks). On multi-monitor setups this reveals which monitor a window sits on and how the taskbar is positioned.',
+    prevention: 'Low-entropy signal on its own; mostly useful combined with other signals, since window position varies constantly with normal use.',
+    common: '0, 0 (single monitor, un-moved window); non-zero values common with taskbars or multi-monitor setups',
+    getValue: () => `screenX/Y: ${window.screenX ?? 'n/a'}/${window.screenY ?? 'n/a'}, availLeft/Top: ${screen.availLeft ?? 'n/a'}/${screen.availTop ?? 'n/a'}`,
   },
   {
     label: 'Device pixel ratio',
@@ -175,6 +191,14 @@ const FINGERPRINT_POINTS = [
     getValue: () => getWebGLImageHash(),
   },
   {
+    label: 'WebGL parameters & extensions',
+    method: 'gl.getParameter(MAX_TEXTURE_SIZE / ALIASED_LINE_WIDTH_RANGE / MAX_VIEWPORT_DIMS), gl.getSupportedExtensions()',
+    explanation: 'Beyond the renderer string, WebGL exposes numeric hardware limits (max texture size, line width range, viewport dimensions) and the list of supported extensions — both vary by GPU, driver version, and browser, adding further entropy.',
+    prevention: 'Firefox resist-fingerprinting and Tor Browser limit or normalize these values alongside the renderer string.',
+    common: 'MAX_TEXTURE_SIZE: 16384 (common on modern GPUs); ~30-40 supported extensions on desktop, fewer on mobile',
+    getValue: () => getWebGLParameters(),
+  },
+  {
     label: 'Audio fingerprint',
     method: 'Render a tone through OfflineAudioContext + DynamicsCompressor, sum the output samples.',
     explanation: 'Processes an audio signal through the Web Audio API and hashes the output. Subtle differences in audio hardware/drivers and floating-point math make this distinguishing across devices.',
@@ -250,6 +274,54 @@ const FINGERPRINT_POINTS = [
     prevention: 'Ad blockers with "anti-adblock-detection" filter lists (e.g. some EasyList add-ons) specifically prevent this kind of probing.',
     common: 'not detected (majority of users); likely blocked (ad blocker detected) for extension users',
     getValue: () => detectAdBlocker(),
+  },
+  {
+    label: 'Media devices',
+    method: 'navigator.mediaDevices.enumerateDevices()',
+    explanation: 'Lists the number of audio input, audio output, and video input devices attached to the system. Device labels are hidden until microphone/camera permission is granted, but the counts alone reveal hardware setup (e.g. laptop with one webcam vs. a multi-monitor streaming rig).',
+    prevention: 'Firefox resist-fingerprinting mode reports a single generic device per kind instead of the real count; denying camera/microphone permission does not hide the counts, only the labels.',
+    common: '1 audio input, 1-2 audio outputs, 1 video input (typical laptop)',
+    getValue: () => getMediaDeviceCounts(),
+  },
+  {
+    label: 'Keyboard layout',
+    method: 'navigator.keyboard.getLayoutMap() (Keyboard API, Chromium only)',
+    explanation: 'Exposes the physical-to-character mapping of the keyboard layout (e.g. which key produces "y" vs. "z"), revealing regional/language keyboard hardware independent of the browser\'s UI language.',
+    prevention: 'Only implemented in Chromium browsers; Firefox and Safari never expose this API to scripts.',
+    common: 'QWERTY (US/UK), QWERTZ (DE/AT/CH), AZERTY (FR); not supported on Firefox/Safari',
+    getValue: () => getKeyboardLayout(),
+  },
+  {
+    label: 'Window chrome visibility',
+    method: 'window.locationbar.visible, .menubar, .personalbar, .scrollbars, .statusbar, .toolbar',
+    explanation: 'Reports which browser UI chrome (address bar, menu bar, bookmarks bar, scrollbars, status bar, toolbar) is visible in the current window. Normal tabs report all as visible; popups opened via window.open() with specific features often hide several of them.',
+    prevention: 'Low-entropy signal on its own; mainly useful to detect popup vs. normal-tab context rather than to identify a specific user.',
+    common: 'all true (normal browser tab); several false (popup windows)',
+    getValue: () => getWindowChromeVisibility(),
+  },
+  {
+    label: 'Battery status',
+    method: 'navigator.getBattery() (Battery Status API)',
+    explanation: 'Previously exposed real-time battery charge level and charging state, which researchers showed could act as a short-lived tracking identifier across sites. Now removed or restricted in most browsers because of that privacy risk.',
+    prevention: 'Firefox and Safari never implemented it; Chrome restricted it to secure/top-level contexts. No user action needed on modern browsers.',
+    common: 'not supported by this browser (removed/restricted in Firefox, Safari, and recent Chrome policy)',
+    getValue: () => getBatteryStatus(),
+  },
+  {
+    label: 'Permissions API states',
+    method: 'navigator.permissions.query({ name }) for a fixed list of permission names',
+    explanation: 'Reports the granted/denied/prompt state of several browser permissions (geolocation, notifications, camera, microphone, etc.), without triggering a permission prompt. Your specific combination of prior grants/denials across sites is a meaningful cross-site identifier.',
+    prevention: 'Reset site permissions periodically in browser settings, or use a browser profile that starts with all permissions at "prompt" by default.',
+    common: 'geolocation/notifications: prompt (most users never asked); camera/microphone: prompt or denied',
+    getValue: () => getPermissionStates(),
+  },
+  {
+    label: 'Motion & sensor APIs',
+    method: 'Feature-detect the Accelerometer, Gyroscope, and ProximitySensor constructors (Generic Sensor API)',
+    explanation: 'Modern phones and some laptops expose motion and proximity sensors to the browser. Their mere availability (mobile hardware vs. desktop) and construction behavior (often blocked by Permissions Policy) add another hardware-class signal.',
+    prevention: 'Desktop browsers without the hardware simply don\'t implement these constructors; Firefox and Safari don\'t implement the Generic Sensor API at all.',
+    common: 'available on many Android Chrome devices; not supported on Firefox, Safari, or most desktops',
+    getValue: () => getSensorSupport(),
   },
 ];
 
@@ -341,6 +413,23 @@ function getWebGLRenderer() {
     const vendor = gl.getParameter(info.UNMASKED_VENDOR_WEBGL);
     const renderer = gl.getParameter(info.UNMASKED_RENDERER_WEBGL);
     return `${vendor} — ${renderer}`;
+  } catch {
+    return 'blocked or unsupported';
+  }
+}
+
+function getWebGLParameters() {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return 'WebGL not supported';
+
+    const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    const lineWidthRange = gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE);
+    const viewportDims = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+    const extensionCount = (gl.getSupportedExtensions() || []).length;
+
+    return `MAX_TEXTURE_SIZE: ${maxTextureSize}, line width range: [${lineWidthRange}], max viewport: [${viewportDims}], ${extensionCount} extensions supported`;
   } catch {
     return 'blocked or unsupported';
   }
@@ -525,6 +614,88 @@ function detectAdBlocker() {
       resolve('detection failed');
     }
   });
+}
+
+async function getMediaDeviceCounts() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+      return 'not supported by this browser';
+    }
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const counts = { audioinput: 0, audiooutput: 0, videoinput: 0 };
+    devices.forEach((device) => {
+      if (device.kind in counts) counts[device.kind] += 1;
+    });
+    return `audio input: ${counts.audioinput}, audio output: ${counts.audiooutput}, video input: ${counts.videoinput}`;
+  } catch {
+    return 'blocked or unsupported';
+  }
+}
+
+async function getKeyboardLayout() {
+  try {
+    if (!navigator.keyboard || !navigator.keyboard.getLayoutMap) {
+      return 'not supported by this browser';
+    }
+    const layoutMap = await navigator.keyboard.getLayoutMap();
+    const sample = ['KeyY', 'KeyZ', 'KeyQ', 'KeyW'];
+    const mapped = sample
+      .filter((code) => layoutMap.has(code))
+      .map((code) => `${code} → ${layoutMap.get(code)}`);
+    return mapped.length ? mapped.join(', ') : 'layout map empty';
+  } catch {
+    return 'blocked or unsupported';
+  }
+}
+
+function getWindowChromeVisibility() {
+  try {
+    const bars = ['locationbar', 'menubar', 'personalbar', 'scrollbars', 'statusbar', 'toolbar'];
+    return bars.map((bar) => `${bar}: ${window[bar]?.visible ?? 'unknown'}`).join(', ');
+  } catch {
+    return 'detection failed';
+  }
+}
+
+function getBatteryStatus() {
+  if (!navigator.getBattery) return Promise.resolve('not supported by this browser');
+  return navigator.getBattery()
+    .then((battery) => `level: ${Math.round(battery.level * 100)}%, charging: ${battery.charging}`)
+    .catch(() => 'blocked or unsupported');
+}
+
+async function getPermissionStates() {
+  if (!navigator.permissions || !navigator.permissions.query) {
+    return 'not supported by this browser';
+  }
+  const names = ['geolocation', 'notifications', 'camera', 'microphone', 'persistent-storage'];
+  const results = await Promise.all(names.map(async (name) => {
+    try {
+      const status = await navigator.permissions.query({ name });
+      return `${name}: ${status.state}`;
+    } catch {
+      return `${name}: unsupported`;
+    }
+  }));
+  return results.join(', ');
+}
+
+function getSensorSupport() {
+  try {
+    const sensors = ['Accelerometer', 'Gyroscope', 'ProximitySensor', 'Magnetometer'];
+    const results = sensors.map((name) => {
+      if (!(name in window)) return `${name}: not supported`;
+      try {
+        new window[name]();
+        return `${name}: available`;
+      } catch (error) {
+        return `${name}: blocked (${error.name || 'error'})`;
+      }
+    });
+    return results.join(', ');
+  } catch {
+    return 'detection failed';
+  }
 }
 
 function hashString(str) {
