@@ -35,6 +35,14 @@ const FINGERPRINT_POINTS = [
     getValue: () => navigator.platform || 'unavailable',
   },
   {
+    label: 'Browser BuildID',
+    method: 'navigator.buildID',
+    explanation: 'A Firefox-only property that historically reported the exact build timestamp of the browser, down to the second — extremely identifying when present.',
+    prevention: 'Modern Firefox freezes this to a fixed placeholder date instead of the real build time; the property is undefined in Chromium and WebKit browsers entirely.',
+    common: '20181001000000 (frozen placeholder in modern Firefox); undefined on Chrome/Safari',
+    getValue: () => navigator.buildID || 'not supported by this browser',
+  },
+  {
     label: 'Language(s)',
     method: 'navigator.languages / navigator.language',
     explanation: 'Your preferred UI/content languages, taken from OS or browser settings — narrows you to a region/locale.',
@@ -124,6 +132,17 @@ const FINGERPRINT_POINTS = [
     },
   },
   {
+    label: 'List of MIME types',
+    method: 'navigator.mimeTypes',
+    explanation: 'A browser-populated array of media types the browser can handle natively (often tied to installed plugins, e.g. PDF viewers). The exact set adds entropy alongside the plugin list.',
+    prevention: 'Modern browsers report a small, standardized MIME type list rather than the true set of installed handlers; Firefox resist-fingerprinting mode further reduces this.',
+    common: 'application/pdf, text/pdf; often empty on Firefox and mobile browsers',
+    getValue: () => {
+      const mimeTypes = Array.from(navigator.mimeTypes || []);
+      return mimeTypes.length ? mimeTypes.map((m) => m.type).join(', ') : 'none reported';
+    },
+  },
+  {
     label: 'Canvas fingerprint',
     method: 'Draw to a hidden <canvas>, then canvas.toDataURL() and hash the pixel output.',
     explanation: 'Renders hidden text/shapes to a &lt;canvas&gt; and hashes the pixel output. Tiny differences in GPU, drivers, and font rendering produce a highly distinguishing hash.',
@@ -148,12 +167,36 @@ const FINGERPRINT_POINTS = [
     getValue: () => getWebGLRenderer(),
   },
   {
+    label: 'WebGL fingerprint (hash)',
+    method: 'Render a shaded gradient triangle pair via a WebGL shader program, then canvas.toDataURL() and hash the pixel output.',
+    explanation: 'Similar to the canvas fingerprint, but rendered through the GPU-accelerated WebGL pipeline instead of the 2D canvas API. Differences in GPU, drivers, and shader compilation produce a distinguishing hash independent of the canvas one.',
+    prevention: 'Firefox resist-fingerprinting and Tor Browser block or return generic output for WebGL reads; extensions like CanvasBlocker also cover WebGL.',
+    common: 'A short hex hash, e.g. "7c21f9a3" — near-unique per device/GPU/driver combo',
+    getValue: () => getWebGLImageHash(),
+  },
+  {
     label: 'Audio fingerprint',
     method: 'Render a tone through OfflineAudioContext + DynamicsCompressor, sum the output samples.',
     explanation: 'Processes an audio signal through the Web Audio API and hashes the output. Subtle differences in audio hardware/drivers and floating-point math make this distinguishing across devices.',
     prevention: 'Tor Browser and Brave add noise to AudioContext output; extensions like AudioContext Fingerprint Defender do similarly.',
     common: 'A short hex hash, e.g. "129.9421" summed sample value — near-unique per device',
     getValue: () => getAudioFingerprint(),
+  },
+  {
+    label: 'Supported audio formats',
+    method: 'new Audio().canPlayType(mimeType) probed against a fixed list of audio codecs.',
+    explanation: 'Which audio codecs a browser can play (MP3, AAC, Ogg Vorbis/Opus, WAV, FLAC) depends on licensing and the underlying OS media framework, so the supported set varies by browser and platform.',
+    prevention: 'Low-entropy signal on its own since most mainstream browsers support a similar core set; mainly useful combined with other signals.',
+    common: 'probably: mp3, aac, wav; maybe: ogg/opus (varies by browser and OS codec licensing)',
+    getValue: () => getSupportedMediaFormats('audio'),
+  },
+  {
+    label: 'Supported video formats',
+    method: 'document.createElement("video").canPlayType(mimeType) probed against a fixed list of video codecs.',
+    explanation: 'Which video codecs a browser can play (H.264, WebM/VP8/VP9, Ogg Theora, HEVC) depends on licensing deals and OS-level hardware decoders, so the supported set varies by browser, OS, and even device model.',
+    prevention: 'Low-entropy signal on its own; mainly useful combined with other signals such as OS/platform.',
+    common: 'probably: mp4/H.264; maybe: webm/vp9 (varies by browser, OS, and hardware decoder support)',
+    getValue: () => getSupportedMediaFormats('video'),
   },
   {
     label: 'Installed fonts (approx.)',
@@ -199,6 +242,14 @@ const FINGERPRINT_POINTS = [
       const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
       return c ? `${c.effectiveType || 'unknown'}, ~${c.downlink ?? '?'} Mbps` : 'not supported by this browser';
     },
+  },
+  {
+    label: 'Ad blocker detection',
+    method: 'Insert a hidden bait element with classic ad-related class names (e.g. "adsbox"), then check if it was hidden/collapsed by a filter list.',
+    explanation: 'Ad blockers and privacy extensions apply filter-list CSS rules that hide elements matching known ad-related names. Whether a page can detect this reveals which extensions are active — a meaningful cross-site identifier since only a minority of users run specific combinations.',
+    prevention: 'Ad blockers with "anti-adblock-detection" filter lists (e.g. some EasyList add-ons) specifically prevent this kind of probing.',
+    common: 'not detected (majority of users); likely blocked (ad blocker detected) for extension users',
+    getValue: () => detectAdBlocker(),
   },
 ];
 
@@ -295,6 +346,64 @@ function getWebGLRenderer() {
   }
 }
 
+function getWebGLImageHash() {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 128;
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return 'WebGL not supported';
+
+    const vertexSrc = `
+      attribute vec2 position;
+      varying vec2 vPos;
+      void main() {
+        vPos = position;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+    const fragmentSrc = `
+      precision mediump float;
+      varying vec2 vPos;
+      void main() {
+        gl_FragColor = vec4(vPos.x * 0.5 + 0.5, vPos.y * 0.5 + 0.5, 0.5, 1.0);
+      }
+    `;
+
+    const compile = (type, src) => {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, src);
+      gl.compileShader(shader);
+      return shader;
+    };
+
+    const program = gl.createProgram();
+    gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSrc));
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSrc));
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      -1, -1, 1, -1, -1, 1,
+      -1, 1, 1, -1, 1, 1,
+    ]), gl.STATIC_DRAW);
+
+    const posLoc = gl.getAttribLocation(program, 'position');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    const dataUrl = canvas.toDataURL();
+    return hashString(dataUrl);
+  } catch {
+    return 'blocked or unsupported';
+  }
+}
+
 function getAudioFingerprint() {
   return new Promise((resolve) => {
     try {
@@ -323,6 +432,39 @@ function getAudioFingerprint() {
       resolve('blocked or unsupported');
     }
   });
+}
+
+function getSupportedMediaFormats(kind) {
+  try {
+    const element = document.createElement(kind);
+    if (!element.canPlayType) return 'canPlayType not supported';
+
+    const candidates = kind === 'audio'
+      ? [
+        ['mp3', 'audio/mpeg'],
+        ['aac', 'audio/mp4; codecs="mp4a.40.2"'],
+        ['wav', 'audio/wav; codecs="1"'],
+        ['ogg/vorbis', 'audio/ogg; codecs="vorbis"'],
+        ['ogg/opus', 'audio/ogg; codecs="opus"'],
+        ['flac', 'audio/flac'],
+      ]
+      : [
+        ['mp4/h264', 'video/mp4; codecs="avc1.42E01E"'],
+        ['webm/vp8', 'video/webm; codecs="vp8"'],
+        ['webm/vp9', 'video/webm; codecs="vp9"'],
+        ['ogg/theora', 'video/ogg; codecs="theora"'],
+        ['hevc', 'video/mp4; codecs="hvc1"'],
+      ];
+
+    const supported = candidates
+      .map(([label, mimeType]) => [label, element.canPlayType(mimeType)])
+      .filter(([, result]) => result === 'probably' || result === 'maybe')
+      .map(([label, result]) => `${label} (${result})`);
+
+    return supported.length ? supported.join(', ') : 'none supported';
+  } catch {
+    return 'detection failed';
+  }
 }
 
 function detectFonts() {
@@ -360,6 +502,29 @@ function detectFonts() {
   } catch {
     return 'detection failed';
   }
+}
+
+function detectAdBlocker() {
+  return new Promise((resolve) => {
+    try {
+      const bait = document.createElement('div');
+      bait.className = 'adsbox ad-banner ads advertisement';
+      bait.style.position = 'absolute';
+      bait.style.left = '-9999px';
+      bait.style.width = '1px';
+      bait.style.height = '1px';
+      document.body.appendChild(bait);
+
+      setTimeout(() => {
+        const style = getComputedStyle(bait);
+        const blocked = bait.offsetHeight === 0 || style.display === 'none' || style.visibility === 'hidden';
+        document.body.removeChild(bait);
+        resolve(blocked ? 'likely blocked (ad blocker detected)' : 'not detected');
+      }, 100);
+    } catch {
+      resolve('detection failed');
+    }
+  });
 }
 
 function hashString(str) {
