@@ -121,6 +121,14 @@ const FINGERPRINT_POINTS = [
     getValue: () => getCanvasFingerprint(),
   },
   {
+    label: 'Canvas rendering (visual)',
+    method: 'Draw a fixed picture (gradient, shape, text) to a visible <canvas> using the exact same instructions every time.',
+    explanation: 'The canvas below is rendered from the same fixed set of drawing instructions on every browser. The result usually looks identical to the eye, but anti-aliasing, sub-pixel hinting, and GPU/driver differences between OS and browser combinations produce slightly different pixel data — which is what canvas fingerprinting hashes.',
+    prevention: 'Same as the canvas fingerprint above: Tor Browser and Brave add noise or require a permission prompt before a page can read canvas pixel data; extensions like CanvasBlocker do the same.',
+    common: 'Visually near-identical across devices, but pixel-level differences are common between OS/browser/GPU combinations',
+    renderValue: (container) => renderCanvasPicture(container),
+  },
+  {
     label: 'WebGL renderer',
     method: 'WEBGL_debug_renderer_info extension, gl.getParameter(UNMASKED_RENDERER_WEBGL)',
     explanation: 'Exposes your GPU vendor and model string via the WebGL context — one of the strongest single hardware signals.',
@@ -204,6 +212,39 @@ async function getServerHeaders() {
       .join('\n');
   } catch {
     return 'unavailable (server not reachable)';
+  }
+}
+
+function renderCanvasPicture(container) {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 260;
+    canvas.height = 60;
+    canvas.className = 'canvas-preview';
+    const ctx = canvas.getContext('2d');
+
+    const gradient = ctx.createLinearGradient(0, 0, 260, 0);
+    gradient.addColorStop(0, '#f60');
+    gradient.addColorStop(1, '#069');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 260, 60);
+
+    ctx.beginPath();
+    ctx.arc(35, 30, 20, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fill();
+
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 16px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Fingerprint 🔍 test', 65, 32);
+
+    container.appendChild(canvas);
+  } catch {
+    const message = document.createElement('p');
+    message.className = 'value';
+    message.textContent = 'blocked or unsupported';
+    container.appendChild(message);
   }
 }
 
@@ -328,10 +369,14 @@ function renderCards() {
     valueCell.className = 'cell cell-value';
     const label = document.createElement('h2');
     label.textContent = `${index + 1}. ${point.label}`;
-    const value = document.createElement('p');
-    value.className = 'value';
-    value.textContent = 'detecting…';
-    valueCell.append(label, value);
+    valueCell.append(label);
+    let value = null;
+    if (!point.renderValue) {
+      value = document.createElement('p');
+      value.className = 'value';
+      value.textContent = 'detecting…';
+      valueCell.append(value);
+    }
 
     const methodCell = document.createElement('div');
     methodCell.className = 'cell cell-method';
@@ -352,9 +397,13 @@ function renderCards() {
     card.append(valueCell, methodCell, explanationCell, preventionCell, commonCell);
     list.appendChild(card);
 
-    Promise.resolve(point.getValue())
-      .then((result) => { value.textContent = result; })
-      .catch(() => { value.textContent = 'error reading value'; });
+    if (point.renderValue) {
+      point.renderValue(valueCell);
+    } else {
+      Promise.resolve(point.getValue())
+        .then((result) => { value.textContent = result; })
+        .catch(() => { value.textContent = 'error reading value'; });
+    }
   });
 }
 

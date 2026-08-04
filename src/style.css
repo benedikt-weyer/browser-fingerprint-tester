@@ -93,6 +93,13 @@ h1 {
   white-space: pre-wrap;
 }
 
+.canvas-preview {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
 .cell-explanation p,
 .cell-prevention p {
   color: var(--text);
