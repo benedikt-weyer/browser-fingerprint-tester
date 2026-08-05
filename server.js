@@ -130,5 +130,5 @@ app.post('/api/match-scores', requireAuth, (req, res) => {
 app.use(express.static(path.join(__dirname, 'src')));
 
 app.listen(port, () => {
-  console.log(`Browser fingerprint tester listening on port ${port}`);
+  console.log(`Browser fingerprint tester listening at http://localhost:${port}`);
 });
